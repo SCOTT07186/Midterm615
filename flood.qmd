@@ -63,12 +63,12 @@ flood_data_clean %>%
 
 ```
 
-## data analysis
+## Data Analysis
 
+#Find the time interval between each flood
 
 <span style="font-size: 20px;">Initial cleaning of FEMA data.</span>
 <span style="font-size: 15px;">Explore the relationship between the length of time each disaster occurs and the time of declaration</span>
-#Find the time interval between each flood
 ```{r}
 
 # Convert incidentBeginDate and incidentEndDate to Date objects
@@ -86,7 +86,9 @@ flood_data_clean$durationInMonths[valid_dates] <- round(as.numeric(difftime(floo
 head(flood_data_clean[, c('incidentBeginDate', 'incidentEndDate', 'durationInMonths')])
 
 ```
-# the same with declaration
+<span style="font-size: 20px;">
+The same with declaration
+</span>
 ```{r}
 # Convert declarationDate and disasterCloseoutDate to Date objects
 flood_data_clean$declarationDate <- as.Date(flood_data_clean$declarationDate, format="%Y-%m-%dT%H:%M:%S")
@@ -103,9 +105,9 @@ flood_data_clean$declarationInMonths[valid_dates] <- round(as.numeric(difftime(f
 head(flood_data_clean[, c('declarationDate', 'disasterCloseoutDate', 'declarationInMonths')])
 ```
 
-<span style="font-size: 15px;"> Then we use incidentBeginDate and declarationDate these two columns,observe the waiting time</span>
-
 #Calculate Waiting Time
+
+<span style="font-size: 15px;"> Then we use incidentBeginDate and declarationDate these two columns,observe the waiting time</span>
 ```{r}
 # Calculate the difference in months
 flood_data_clean$waitingTime <- NA
@@ -125,9 +127,11 @@ columnr <- c('declarationDate','disasterCloseoutDate','incidentEndDate')
 data <- flood_data_clean[, !(names(flood_data_clean) %in% columnr)]
 ```
 
-<span style="font-size: 15px;"> Visualization of the average waiting time </span>
 
 #Delay between disaster onset and declaration in top ten state
+
+<span style="font-size: 15px;"> Visualization of the average waiting time </span>
+
 ```{r}
 # Calculate the average waiting time by state
 avg_waiting_time_by_state <- data %>%
@@ -173,7 +177,7 @@ avg_duration_by_state <- data %>%
   summarise(AvgDuration = mean(durationInMonths, na.rm = TRUE))
 ```
 
-# find the average duration of disasters for each state
+# Find the average duration of disasters for each state
 ```{r}
 # Create a map of the USA
 usa_map <- map_data("state")
@@ -293,7 +297,9 @@ acs1 <- acs212 %>% select(placeCode,Total)
 data21 <- subset(data, fyDeclared == '2021')
 data21 <- data21 %>% left_join(acs1 %>% select(placeCode, Total), by = "placeCode")
 ```
-# cleaning the census data into 2020 2021
+
+# Cleaning the census data into 2020 2021
+
 <span style="font-size: 15px;">
 Combine total population data for each state, by year, into FEMA
 </span>
@@ -309,11 +315,12 @@ result1 <- data21 %>%
             TotalSum = sum(Total, na.rm = TRUE))
 head(result1)
 ```
+
+#Reading the storm data
+
 <span style="font-size: 15px;">
 Explore the storm data and process the two data separately for 2020 and 2021.
 </span>
-
-#reading the storm data
 ```{r}
 storm_data <- read.csv("~/Documents/MSSPbootcampRZ/mid615/StormEvents_details-ftp_v1.0_d2020_c20230927.csv",header = T)
 
@@ -346,11 +353,12 @@ storm_data <- storm_data %>%
   select(-DAMAGE_PROPERTY, -DAMAGE_CROPS)
 ```
 
+
+# Finding out the damage with each state in 2020 and 2021
+
 <span style="font-size: 15px;">
 Observation of deaths and injuries caused by flooding in various states
 </span>
-
-# Finding out the damage with each state in 2020 and 2021
 ```{r}
 storm0 <- storm_data %>%
   group_by(STATE) %>%
@@ -491,10 +499,12 @@ s1 %>%
 We can find that New York, Mexico,  New Jersey, Texas, Tennessee and Mississipp are the most affected by flooding disasters, where the frequency of disasters, casualties, property damage ，The most affected by the flood disaster, in which the frequency of disasters, casualties, property damage is our main object of observation.
 
 
-<span style="font-size: 15px;">
-Combining all the data together, we end up with individual state specifics for the two years 2020 and 2021。
-</span>
+
 # Combining Census, Flood, and Storm Data
+
+<span style="font-size: 15px;">
+Combining all the data together, we end up with individual state specifics for the two years 2020 and 2021.
+</span>
 ```{r}
 com0 <- left_join(result,storm0, by='state')
 com1 <- left_join(result1,storm1, by='state')
@@ -502,13 +512,90 @@ head(com0)
 head(com1)
 ```
 
-Throughout the processing of the data, we can see that the more densely populated the area, the higher the casualty rate.
+## Looking into Texas State
 
 <span style="font-size: 15px;">
-As a next step, we can conduct a separate analysis of New York State to further explore the link between flooding and climate, as well as a post-disaster analysis of the specific circumstances of the disaster.
+we extracted specific state-level insights, which positioned us to zero in on Texas due to its dense population.
+</span>
+```{r}
+storm_t <- read.csv("~/Documents/MSSPbootcampRZ/mid615/storm_t.csv",header = T)
+```
+
+```{r}
+# Count the frequency of each month
+month_counts <- table(storm_t$month)
+
+# Convert to data frame for ggplot
+month_df <- as.data.frame(month_counts)
+names(month_df) <- c('month', 'frequency')
+
+# Manually specify the order of the months
+month_df$month <- factor(month_df$month, levels=c("January", "February", "March", "April", "May", "June", 
+                                                   "July", "August", "September", "October", "November", "December"))
+
+# Plot the bar chart
+ggplot(month_df, aes(x = month, y = frequency)) +
+  geom_bar(stat = 'identity') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = 'Frequency of disasters by Month in 2020', x = 'Month', y = 'Frequency')
+```
+
+```{r}
+storm_t <- storm_t %>%
+  filter(grepl("Flood", TYPE))
+
+storm_t <- storm_t %>%
+  mutate(Total_Injuries = INJURIES_DIRECT + INJURIES_INDIRECT) %>%
+  select(-INJURIES_DIRECT, -INJURIES_INDIRECT)
+
+storm_t <- storm_t %>%
+  mutate(Total_DEATHS = DEATHS_DIRECT + DEATHS_INDIRECT) %>%
+  select(-DEATHS_DIRECT, -DEATHS_INDIRECT)
+
+storm_t <- storm_t %>%
+  mutate(
+    DAMAGE_PROPERTY = as.numeric(gsub("K", "", DAMAGE_PROPERTY, ignore.case = TRUE)) / ifelse(grepl("K", DAMAGE_PROPERTY, ignore.case = TRUE), 1, 1000),
+    DAMAGE_PROPERTY = as.numeric(gsub("M", "", DAMAGE_PROPERTY, ignore.case = TRUE)) * ifelse(grepl("M", DAMAGE_PROPERTY, ignore.case = TRUE), 1000, 1),
+    DAMAGE_CROPS = as.numeric(gsub("K", "", DAMAGE_CROPS, ignore.case = TRUE)) / ifelse(grepl("K", DAMAGE_CROPS, ignore.case = TRUE), 1, 1000),
+    DAMAGE_CROPS = as.numeric(gsub("M", "", DAMAGE_CROPS, ignore.case = TRUE)) * ifelse(grepl("M", DAMAGE_CROPS, ignore.case = TRUE), 1000, 1)
+  )
+
+storm_t <- storm_t %>%
+  mutate(Damage = DAMAGE_PROPERTY + DAMAGE_CROPS) %>%
+  select(-DAMAGE_PROPERTY, -DAMAGE_CROPS)
+```
+
+```{r}
+ggplot(storm_t) +
+ aes(x = month, y = TYPE, fill = Damage) +
+ geom_tile() +
+ scale_fill_gradient() +
+ labs(title = "Damage for each type and month") +
+ theme_bw() +
+ theme(plot.title = element_text(size = 20L))
+
+```
+```{r}
+
+ggplot(storm_t) +
+ aes(x = month, y = Damage) +
+ geom_col(fill = "#2D8BEF") +
+ labs(title = "The Damage in each month") +
+ theme_bw() +
+ theme(plot.title = element_text(size = 30L))
+```
+<span style="font-size: 15px;">
+It can be found that the floods that occurred in September caused the most damage, and the main types of floods caused were Flood and Flash Flood.
 </span>
 
 
+
+
+## Conclusion
+We explored the time intervals between flood events and delving into the prevalence of floods across states, as well as the delays in their respective disaster declarations. We discovered that these declaration delays often correlated with the frequency of the disasters experienced. Moving forward, we incorporated census data to acquire the total populations of the affected counties.
+With the aid of storm data, we were able to assess the extent of disaster impacts and the associated losses within each state. Our analysis of the casualties and the damage to property and crops caused by floods led us to a significant insight: the states that incurred the greatest losses were typically those with higher population densities.
+
+After merging all the relevant data, we extracted specific state-level insights, which positioned us to zero in on Texas due to its dense population. Our goal is to conduct a investigation into Texas's flood events, aiming to unravel the intricate relationship between flooding and climate change. Additionally, we plan to perform a detailed post-disaster analysis to better understand the unique conditions and effects of flood.
 
 
 <p style="page-break-before: always">
