@@ -31,10 +31,10 @@ library(maps)
 ```{r}
 
 # Read the data
-disaster_data <- read.csv('~/Downloads/615mid/DisasterDeclarationsSummaries.csv')
+disaster_data <- read.csv('~//Documents/MSSPbootcampRZ/mid615/DisasterDeclarationsSummaries.csv')
 
 ```
-
+<span style="font-size: 20px;">Initial cleaning of FEMA data.</span>
 
 ```{r}
 
@@ -51,19 +51,23 @@ flood_data_clean <- flood_data[, !(names(flood_data) %in% columns_to_drop)]
 # Plot the number of flood disaster declarations by state
 
 flood_data_clean %>%
- filter(incidentBeginDate >= "2020-01-25" & incidentBeginDate <= "2022-11-19") %>%
+ filter(incidentBeginDate >= "2020-01-25" & incidentBeginDate <= "2022-01-25") %>%
  ggplot() +
  aes(x = state, fill = declarationType) +
  geom_bar() +
  scale_fill_hue(direction = 1) +
- theme_minimal()
+ theme_minimal()+
+ labs(title = 'the number of flood disaster in 2020 and 2021',
+       x = 'State',
+       y = 'The number of flood')
 
 ```
 
 ## data analysis
 
 
-
+<span style="font-size: 20px;">Initial cleaning of FEMA data.</span>
+<span style="font-size: 15px;">Explore the relationship between the length of time each disaster occurs and the time of declaration</span>
 #Find the time interval between each flood
 ```{r}
 
@@ -98,6 +102,9 @@ flood_data_clean$declarationInMonths[valid_dates] <- round(as.numeric(difftime(f
 # Display the first few rows of the dataframe
 head(flood_data_clean[, c('declarationDate', 'disasterCloseoutDate', 'declarationInMonths')])
 ```
+
+<span style="font-size: 15px;"> Then we use incidentBeginDate and declarationDate these two columns,observe the waiting time</span>
+
 #Calculate Waiting Time
 ```{r}
 # Calculate the difference in months
@@ -118,6 +125,8 @@ columnr <- c('declarationDate','disasterCloseoutDate','incidentEndDate')
 data <- flood_data_clean[, !(names(flood_data_clean) %in% columnr)]
 ```
 
+<span style="font-size: 15px;"> Visualization of the average waiting time </span>
+
 #Delay between disaster onset and declaration in top ten state
 ```{r}
 # Calculate the average waiting time by state
@@ -135,6 +144,7 @@ ggplot(top_states, aes(x = state, y = AvgWaitingTime)) +
        x = 'State',
        y = 'Average Waiting Time (Months)')
 ```
+<span style="font-size: 15px;"> Heat mapping to further observe differences across states. </span>
 
 ```{r}
 # Define a mapping from state abbreviations to full names
@@ -162,6 +172,7 @@ avg_duration_by_state <- data %>%
   group_by(state) %>%
   summarise(AvgDuration = mean(durationInMonths, na.rm = TRUE))
 ```
+
 # find the average duration of disasters for each state
 ```{r}
 # Create a map of the USA
@@ -182,7 +193,7 @@ ggplot(data = usa_map, aes(x = long, y = lat, group = group, fill = AvgDuration)
   theme(axis.text = element_blank(),
         axis.ticks = element_blank())
 ```
-
+<span style="font-size: 15px;"> Visualization of the average waiting time </span>
 ```{r}
 # Calculate the average durationInMonths and declarationInMonths by state
 avg_duration_declaration_by_state <- data %>%
@@ -212,6 +223,8 @@ ggplot(data = top_states_long, aes(x = reorder(state, -Value), y = Value, fill =
        fill = 'Legend') +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+<span style="font-size: 15px;"> Visualization of the number of Flood in past 70 years </span>
+
 
 ```{r}
 ggplot(data, aes(x = as.factor(fyDeclared))) +
@@ -245,6 +258,11 @@ ggplot(data = um, aes(x = long, y = lat, group = group, fill = Count)) +
 
 
 ```
+<span style="font-size: 15px;">Comparing the heat map of the number of disaster occurrences with waiting times reveals a correlation between the two. 
+</span>
+<span style="font-size: 10px;">
+We can find that states with a higher number of disasters have longer delays in its declaration. 
+</span>
 
 ```{r}
 data$placeCode <- paste0(flood_data$fipsStateCode,flood_data$fipsCountyCode)
@@ -252,9 +270,12 @@ data$placeCode <- paste0(flood_data$fipsStateCode,flood_data$fipsCountyCode)
 data$placeCode <- sprintf("%05s", data$placeCode)
 ```
 
+<span style="font-size: 15px;">
+Explore the demographic data and process the two data separately for 2020 and 2021.
+</span>
 # Reading census data
 ```{r}
-acs202 <- read.csv('~/Downloads/615mid/Census Download_2023-10-23T140133/ACSDP5Y2020.DP05-Data.csv')
+acs202 <- read.csv('~/Documents/MSSPbootcampRZ/mid615/ACSDP5Y2020.DP05-Data.csv')
 acs202$placeCode <- substr(acs202$Geography, nchar(acs202$Geography)-4, nchar(acs202$Geography))
 acs202<- as.data.frame(acs202)
 acs0 <- acs202 %>% select(placeCode,Total)
@@ -264,7 +285,7 @@ data20 <- data20 %>% left_join(acs0 %>% select(placeCode, Total), by = "placeCod
 ```
 
 ```{r}
-acs212 <- read.csv('~/Downloads/615mid/Census Download_2023-10-23T140133/ACSDP5Y2021.DP05-Data.csv')
+acs212 <- read.csv('~/Documents/MSSPbootcampRZ/mid615/ACSDP5Y2021.DP05-Data.csv')
 acs212$placeCode <- substr(acs212$Geography, nchar(acs212$Geography)-4, nchar(acs212$Geography))
 acs212<- as.data.frame(acs212)
 acs1 <- acs212 %>% select(placeCode,Total)
@@ -273,6 +294,9 @@ data21 <- subset(data, fyDeclared == '2021')
 data21 <- data21 %>% left_join(acs1 %>% select(placeCode, Total), by = "placeCode")
 ```
 # cleaning the census data into 2020 2021
+<span style="font-size: 15px;">
+Combine total population data for each state, by year, into FEMA
+</span>
 ```{r}
 result <- data20 %>%
   group_by(state) %>%
@@ -285,9 +309,13 @@ result1 <- data21 %>%
             TotalSum = sum(Total, na.rm = TRUE))
 head(result1)
 ```
+<span style="font-size: 15px;">
+Explore the storm data and process the two data separately for 2020 and 2021.
+</span>
+
 #reading the storm data
 ```{r}
-storm_data <- read.csv("~/Downloads/615mid/storm/2020/StormEvents_details-ftp_v1.0_d2020_c20230927.csv",header = T)
+storm_data <- read.csv("~/Documents/MSSPbootcampRZ/mid615/StormEvents_details-ftp_v1.0_d2020_c20230927.csv",header = T)
 
 # Select the specified columns
 storm_data_selected <- storm_data %>%
@@ -317,7 +345,12 @@ storm_data <- storm_data %>%
   mutate(Damage = DAMAGE_PROPERTY + DAMAGE_CROPS) %>%
   select(-DAMAGE_PROPERTY, -DAMAGE_CROPS)
 ```
-# Finding out the damage with each state
+
+<span style="font-size: 15px;">
+Observation of deaths and injuries caused by flooding in various states
+</span>
+
+# Finding out the damage with each state in 2020 and 2021
 ```{r}
 storm0 <- storm_data %>%
   group_by(STATE) %>%
@@ -337,13 +370,13 @@ ggplot(df_long, aes(fill = Category, y = Value, x = reorder(STATE, Value))) +
   scale_fill_manual(values = c("Injuries" = "blue", "Deaths" = "red")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x = "State", y = "Total number", fill = "Category") +
-  ggtitle("Total number of Injuries and Deaths by State")
+  ggtitle("Total number of Injuries and Deaths by State in 2020")
 
 
 ```
 
 ```{r}
-storm_data <- read.csv("~/Downloads/615mid/storm/2021/StormEvents_details-ftp_v1.0_d2021_c20231017.csv",header = T)
+storm_data <- read.csv("~/Documents/MSSPbootcampRZ/mid615/StormEvents_details-ftp_v1.0_d2021_c20231017.csv",header = T)
 
 # Select the specified columns
 storm_data_selected <- storm_data %>%
@@ -391,8 +424,14 @@ ggplot(df_long, aes(fill = Category, y = Value, x = reorder(STATE, Value))) +
   scale_fill_manual(values = c("Injuries" = "blue", "Deaths" = "red")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x = "State", y = "Total number", fill = "Category") +
-  ggtitle("Total number of Injuries and Deaths by State")
+  ggtitle("Total number of Injuries and Deaths by State in 2021")
 ```
+
+<span style="font-size: 15px;">
+Observation of damages caused by flooding in various states, including the property damage and crops damage in 2020 and 2021.
+</span>
+
+
 
 ```{r}
 capitalize_first <- function(string) {
@@ -418,7 +457,7 @@ s0 %>%
  geom_bar() +
  scale_fill_distiller(palette = "BuGn", 
  direction = 1) +
- labs(y = "Total Damage(K)", title = "Total damage with each state") +
+ labs(y = "Total Damage(K)", title = "Total damage with each state in 2020") +
  theme_minimal()
 
 ```
@@ -445,12 +484,16 @@ s1 %>%
  geom_bar() +
  scale_fill_distiller(palette = "BuGn", 
  direction = 1) +
- labs(y = "Total Damage(K)", title = "Total damage with each state") +
+ labs(y = "Total Damage(K)", title = "Total damage with each state in 2021") +
  theme_minimal()
 
 ```
 We can find that New York, Mexico,  New Jersey, Texas, Tennessee and Mississipp are the most affected by flooding disasters, where the frequency of disasters, casualties, property damage ，The most affected by the flood disaster, in which the frequency of disasters, casualties, property damage is our main object of observation.
 
+
+<span style="font-size: 15px;">
+Combining all the data together, we end up with individual state specifics for the two years 2020 and 2021。
+</span>
 # Combining Census, Flood, and Storm Data
 ```{r}
 com0 <- left_join(result,storm0, by='state')
@@ -460,6 +503,13 @@ head(com1)
 ```
 
 Throughout the processing of the data, we can see that the more densely populated the area, the higher the casualty rate.
+
+<span style="font-size: 15px;">
+As a next step, we can conduct a separate analysis of New York State to further explore the link between flooding and climate, as well as a post-disaster analysis of the specific circumstances of the disaster.
+</span>
+
+
+
 
 <p style="page-break-before: always">
 
